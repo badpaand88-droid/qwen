@@ -15,9 +15,12 @@ logging.basicConfig(
 DASHSCOPE_API_KEY = os.getenv('DASHSCOPE_API_KEY')
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 
+if not DASHSCOPE_API_KEY or not TELEGRAM_BOT_TOKEN:
+    raise ValueError("Пожалуйста, установите переменные окружения DASHSCOPE_API_KEY и TELEGRAM_BOT_TOKEN")
+
 dashscope.api_key = DASHSCOPE_API_KEY
 
-# Хранилище для истории (в реальном приложении используйте БД)
+# Хранилище для истории (в продакшене используйте БД)
 user_histories = {}
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -31,7 +34,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Добавляем сообщение пользователя
     user_histories[user_id].append({"role": "user", "content": user_message})
     
-    # Ограничиваем историю (опционально)
+    # Ограничиваем историю
     if len(user_histories[user_id]) > 10:
         user_histories[user_id] = user_histories[user_id][-10:]
     
@@ -53,12 +56,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await update.message.reply_text(ai_text)
 
-def run_bot():
-    """Функция для запуска бота"""
+def main():
+    """Основная функция для запуска бота"""
     app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    return app
+    
+    logging.info("Бот запущен и ожидает сообщений...")
+    app.run_polling()
 
 if __name__ == '__main__':
-    app = run_bot()
-    app.run_polling()
+    main()
